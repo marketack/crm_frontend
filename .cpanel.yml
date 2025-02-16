@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export PATH=/usr/local/bin:$PATH
+    - /bin/cp -R * /home/crmore/public_html/crm_frontend
