@@ -14,6 +14,8 @@ import {
   TableHead,
   TableRow,
   IconButton,
+  useTheme,
+  Box,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
@@ -25,6 +27,7 @@ const validRoles = ["admin", "manager", "sales", "support", "customer"];
 
 const Profile = () => {
   const { user } = useSelector((state) => state.auth);
+  const theme = useTheme();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -72,6 +75,7 @@ const Profile = () => {
       await changeUserRole(searchEmail, selectedRole);
       setSearchEmail("");
       setSelectedRole("");
+      toast.success("User role updated successfully.");
     } catch (error) {
       toast.error("Role change failed.");
     }
@@ -108,7 +112,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <Container>
+      <Container sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <CircularProgress />
       </Container>
     );
@@ -117,29 +121,38 @@ const Profile = () => {
   if (!userData) {
     return (
       <Container>
-        <Typography variant="h5">No Profile Data Found</Typography>
+        <Typography variant="h5" sx={{ textAlign: "center", marginTop: 4 }}>
+          No Profile Data Found
+        </Typography>
       </Container>
     );
   }
 
   return (
-    <Container>
+    <Container sx={{ paddingBottom: 5 }}>
       {/* User Profile Details */}
-      <Paper elevation={3} sx={{ padding: 3, maxWidth: 500, margin: "auto" }}>
+      <Paper
+        elevation={3}
+        sx={{
+          padding: 3,
+          maxWidth: 600,
+          margin: "auto",
+          backgroundColor: theme.palette.background.paper,
+        }}
+      >
         <Typography variant="h5" gutterBottom>
           Profile Details
         </Typography>
-        <Typography variant="body1"><strong>First Name:</strong> {userData.firstName}</Typography>
-        <Typography variant="body1"><strong>Last Name:</strong> {userData.lastName}</Typography>
-        <Typography variant="body1"><strong>Email:</strong> {userData.email}</Typography>
-        <Typography variant="body1"><strong>Phone Number:</strong> {userData.phoneNumber}</Typography>
-        <Typography variant="body1"><strong>Username:</strong> {userData.username}</Typography>
-        <Typography variant="body1"><strong>Role:</strong> {userData.role}</Typography>
+        {["First Name", "Last Name", "Email", "Phone Number", "Username", "Role"].map((field, index) => (
+          <Typography key={index} variant="body1">
+            <strong>{field}:</strong> {userData[field.toLowerCase().replace(" ", "")]}
+          </Typography>
+        ))}
       </Paper>
 
       {/* Admin Only - Role Change Form */}
       {userData.role === "admin" && (
-        <Paper elevation={3} sx={{ padding: 3, maxWidth: 500, margin: "auto", marginTop: 3 }}>
+        <Paper elevation={3} sx={{ padding: 3, maxWidth: 600, margin: "auto", marginTop: 3 }}>
           <Typography variant="h6" gutterBottom>
             Admin: Change User Role
           </Typography>
@@ -166,7 +179,7 @@ const Profile = () => {
               </MenuItem>
             ))}
           </TextField>
-          <Button variant="contained" color="primary" onClick={handleRoleChange}>
+          <Button variant="contained" color="primary" onClick={handleRoleChange} fullWidth>
             Change Role
           </Button>
         </Paper>
@@ -174,32 +187,33 @@ const Profile = () => {
 
       {/* Admin Only - Staff Management */}
       {userData.role === "admin" && (
-        <Paper elevation={3} sx={{ padding: 3, maxWidth: 700, margin: "auto", marginTop: 3 }}>
+        <Paper elevation={3} sx={{ padding: 3, maxWidth: "100%", marginTop: 3 }}>
           <Typography variant="h6" gutterBottom>
             Admin: Manage Staff
           </Typography>
-          <TextField
-            fullWidth
-            label="Staff Name"
-            variant="outlined"
-            value={staffName}
-            onChange={(e) => setStaffName(e.target.value)}
-            sx={{ marginBottom: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Staff Email"
-            variant="outlined"
-            value={staffEmail}
-            onChange={(e) => setStaffEmail(e.target.value)}
-            sx={{ marginBottom: 2 }}
-          />
-          <Button variant="contained" color="primary" onClick={handleAddStaff}>
-            Add Staff
-          </Button>
 
-          {/* Staff List */}
-          <TableContainer component={Paper} sx={{ marginTop: 3 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Staff Name"
+              variant="outlined"
+              value={staffName}
+              onChange={(e) => setStaffName(e.target.value)}
+            />
+            <TextField
+              fullWidth
+              label="Staff Email"
+              variant="outlined"
+              value={staffEmail}
+              onChange={(e) => setStaffEmail(e.target.value)}
+            />
+            <Button variant="contained" color="primary" onClick={handleAddStaff} fullWidth>
+              Add Staff
+            </Button>
+          </Box>
+
+          {/* Responsive Staff Table */}
+          <TableContainer component={Paper} sx={{ marginTop: 3, overflowX: "auto" }}>
             <Table>
               <TableHead>
                 <TableRow>
