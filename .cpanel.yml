@@ -1,5 +1,23 @@
 ---
 deployment:
   tasks:
-    - export PATH=/usr/local/bin:$PATH
-    - /bin/cp -R * /home/crmore/public_html/crm_frontend
+    # Define the deployment path
+    - export DEPLOYPATH=/home/crmore/public_html/frontend
+
+    # Change directory to the frontend repository
+    - cd $DEPLOYPATH
+
+    # Pull the latest code from GitHub
+    - git pull origin main || echo "Git pull failed"
+
+    # Install dependencies
+    - npm install || echo "npm install failed"
+
+    # Build the React app
+    - npm run build || echo "Build failed"
+
+    # Transfer the built files to `public_html`
+    - rsync -av --delete $DEPLOYPATH/build/ /home/crmore/public_html/
+
+    # Print success message
+    - echo "Frontend build and deployment completed!"
