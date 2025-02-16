@@ -1,8 +1,14 @@
 import axios from "axios";
 
+// Determine Base URL based on environment
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? process.env.REACT_APP_API_URL_LOCAL || "http://localhost:3001/api"
+    : process.env.REACT_APP_API_URL || "https://backend.crmore.com/api";
+
 // Base API Configuration
 const API = axios.create({
-  baseURL: "http://localhost:3001/api", // Change to your backend URL
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -15,6 +21,8 @@ API.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export default API;
