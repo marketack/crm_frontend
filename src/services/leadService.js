@@ -18,14 +18,35 @@ export const createLead = async (leadData) => {
   return response.data;
 };
 
-// Update Lead
 export const updateLead = async (leadId, leadData) => {
-  const response = await API.put(`/leads/${leadId}`, leadData);
-  return response.data;
+  console.log("🔍 Debug: Updating Lead ID:", leadId); // ✅ Debugging
+
+  if (!leadId) {
+    console.error("❌ Error: leadId is undefined in updateLead()");
+    toast.error("Invalid Lead ID.");
+    return Promise.reject(new Error("leadId is required for updating a lead"));
+  }
+
+  try {
+    const response = await API.put(`/leads/${leadId}`, leadData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Update Lead Error:", error);
+    toast.error("Failed to update lead.");
+    throw error;
+  }
 };
 
-// Delete Lead
+
 export const deleteLead = async (leadId) => {
-  const response = await API.delete(`/leads/${leadId}`);
-  return response.data;
+  console.log("Deleting Lead ID:", leadId); // ✅ Debugging
+
+  try {
+    const response = await API.delete(`/leads/${leadId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete Lead Error:", error);
+    toast.error("Failed to delete lead.");
+    throw error;
+  }
 };

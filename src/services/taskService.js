@@ -24,7 +24,13 @@ export const createTask = async (taskData) => {
 
 export const updateTask = async (taskId, taskData) => {
   try {
-    const response = await API.put(`/tasks/${taskId}`, taskData);
+    const response = await API.put(`/tasks/${taskId}`, {
+      title: taskData.title,
+      description: taskData.description,
+      status: taskData.status,
+      assignedTo: taskData.assignedTo,  // ✅ Ensure this is sent
+    });
+
     toast.success("Task updated successfully!");
     return response.data;
   } catch (error) {
