@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from "../services/customerService";
 import { useNavigate } from "react-router-dom";
 
+
 const Customers = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
