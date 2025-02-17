@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { useSelector } from "react-redux";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
 import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -18,7 +16,7 @@ import PrivateRoute from "./components/PrivateRoute";
 
 const App = () => {
   const { user } = useSelector((state) => state.auth);
-  
+
   // Load dark mode preference from localStorage
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("darkMode") === "true"; // Convert to boolean
@@ -54,18 +52,18 @@ const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-
         <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          {/* Public Routes */}
+          <Route path="/" element={user ? <Navigate to="/" /> : <Home />} />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+          <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
 
+          {/* Protected Routes (Wrapped inside MainLayout) */}
           <Route element={<MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}>
             <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
             <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
             <Route path="/customers" element={<PrivateRoute element={<Customers />} />} />
-            <Route path="/leads" element={<PrivateRoute element={<Leads />} />} />\
+            <Route path="/leads" element={<PrivateRoute element={<Leads />} />} />
             <Route path="/tasks" element={<PrivateRoute element={<Tasks />} />} />
           </Route>
         </Routes>

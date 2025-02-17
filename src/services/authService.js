@@ -1,11 +1,34 @@
 import API from "./api";
-
+import axios from "axios";
 import { toast } from "react-toastify";
 
-// Register User
+
+export const handleLogout = async (navigate) => {
+  try {
+    console.log("🔄 Logging out...");
+
+    // ✅ Remove tokens from localStorage BEFORE making API request
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+
+    // ✅ Call logout API (even if CORS is removed)
+    await API.post("/api/auth/logout", {}, { withCredentials: true });
+
+    console.log("✅ Logout successful!");
+
+    // ✅ Redirect to the main page
+    navigate("/");
+  } catch (error) {
+    console.error("❌ Logout failed:", error.response?.data || error.message);
+    
+    // ✅ Ensure redirection even if API request fails
+    navigate("/");
+  }
+};
+
+// ✅ Register User
 export const registerUser = async (userData) => {
   try {
-    // Check if required fields are missing
     if (!userData.firstName || !userData.lastName || !userData.username || !userData.email || !userData.phoneNumber || !userData.password) {
       toast.error("All fields are required!");
       return;
@@ -20,15 +43,14 @@ export const registerUser = async (userData) => {
   }
 };
 
-
+// ✅ Login User (Secure Token Handling)
 export const loginUser = async (loginData) => {
   try {
     const response = await API.post("/auth/login", loginData);
-    const { accessToken, refreshToken, user } = response.data;
+    const { accessToken, user } = response.data;
 
-    // Store tokens and user data
-    localStorage.setItem("token", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    // Store access token and user info
+    localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("user", JSON.stringify(user));
 
     toast.success("Login successful!");
@@ -39,32 +61,87 @@ export const loginUser = async (loginData) => {
   }
 };
 
-// Logout User
-export const logoutUser = () => {
+// ✅ Logout User (Clear Tokens & Server Refresh Token)
+export const logoutUser = async () => {
+  try {
+    await API.post("/auth/logout", {}, { withCredentials: true });
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+
   localStorage.removeItem("accessToken");
   localStorage.removeItem("user");
+  toast.success("Logged out successfully!");
 };
 
-// Forgot Password
+// ✅ Forgot Password
 export const forgotPassword = async (email) => {
-  const response = await API.post("/auth/forgot-password", { email });
-  return response.data;
+  try {
+    const response = await API.post("/auth/forgot-password", { email });
+    return response.data;
+  } catch (error) {
+    toast.error("Failed to send reset link.");
+    throw error;
+  }
 };
 
-// Verify OTP for Forgot Password
+// ✅ Verify OTP for Password Reset
 export const verifyOtp = async (otpData) => {
-  const response = await API.post("/auth/verify-otp", otpData);
-  return response.data;
+  try {
+    const response = await API.post("/auth/verify-otp", otpData);
+    return response.data;
+  } catch (error) {
+    toast.error("Invalid OTP.");
+    throw error;
+  }
 };
 
-// Reset Password
+// ✅ Reset Password
 export const resetPassword = async (resetData) => {
-  const response = await API.post("/auth/reset-password", resetData);
-  return response.data;
+  try {
+    const response = await API.post("/auth/reset-password", resetData);
+    return response.data;
+  } catch (error) {
+    toast.error("Password reset failed.");
+    throw error;
+  }
 };
 
-// Refresh Token
-export const refreshToken = async (token) => {
-  const response = await API.post("/auth/refresh-token", { token });
-  return response.data;
+// ✅ Refresh Token Handling
+export const refreshToken = async () => {
+  try {
+    const response = await axios.post("/api/auth/refresh-token", {}, { withCredentials: true });
+    localStorage.setItem("accessToken", response.data.accessToken);
+    return response.data.accessToken;
+  } catch (error) {
+    console.error("Token refresh failed", error);
+    return null;
+  }
+};
+
+// ✅ Attach Authorization Header Automatically
+axios.interceptors.request.use(
+  async (config) => {
+    let token = localStorage.getItem("accessToken");
+
+    // Refresh token if expired
+    if (isTokenExpiring(token)) {
+      token = await refreshToken();
+      if (!token) {
+        localStorage.removeItem("accessToken");
+        window.location.href = "/login"; // Redirect if refresh fails
+      }
+    }
+
+    config.headers["Authorization"] = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ✅ Check if Token is Expiring Soon
+const isTokenExpiring = (token) => {
+  if (!token) return true;
+  const { exp } = JSON.parse(atob(token.split(".")[1]));
+  return Date.now() >= exp * 1000 - 60000; // Refresh 1 min before expiry
 };

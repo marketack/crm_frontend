@@ -22,7 +22,6 @@ const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen, onLogout }) => {
     { text: "Settings", icon: <SettingsIcon />, route: "/profile" },
   ];
 
-  
   return (
     <Drawer
       variant="permanent"
@@ -36,10 +35,9 @@ const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen, onLogout }) => {
           backgroundColor: darkMode ? "#121212" : "#FFFFFF",
           color: darkMode ? "#E0E0E0" : "#1E1E2F",
           boxSizing: "border-box",
-          borderRight: darkMode ? "1px solid #333" : "1px solid #DDD",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between", // Ensure logout stays at the bottom
+          justifyContent: "space-between",
           height: "100vh",
         },
       }}
@@ -81,23 +79,11 @@ const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen, onLogout }) => {
         ))}
       </List>
 
-      {/* Logout Button - Placed at the Bottom */}
+      {/* Logout Button */}
       <Box sx={{ p: 2, textAlign: "center" }}>
-      <Button
-  fullWidth
-  variant="contained"
-  color="error"
-  startIcon={<ExitToAppIcon />}
-  onClick={onLogout}  // ✅ Now it works
-  sx={{
-    textTransform: "none",
-    backgroundColor: darkMode ? "#B71C1C" : "#D32F2F",
-    "&:hover": { backgroundColor: darkMode ? "#C62828" : "#B71C1C" },
-  }}
->
-  {sidebarOpen ? "Logout" : ""}
-</Button>
-
+        <Button fullWidth variant="contained" color="error" startIcon={<ExitToAppIcon />} onClick={onLogout}>
+          {sidebarOpen ? "Logout" : ""}
+        </Button>
       </Box>
     </Drawer>
   );
