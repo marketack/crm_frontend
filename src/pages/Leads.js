@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Container, Typography, Button, Paper, TextField, Dialog, DialogActions, 
   DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, CircularProgress, Select, MenuItem, Chip
+  TableContainer, TableHead, TableRow, CircularProgress, Select, MenuItem, Chip,Checkbox
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import { toast } from "react-toastify";
@@ -202,16 +202,40 @@ const Leads = () => {
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>{isEditing ? "Edit Lead" : "Add New Lead"}</DialogTitle>
         <DialogContent>
-          <TextField autoFocus margin="dense" name="name" label="Name" fullWidth variant="outlined" value={currentLead.name} onChange={handleChange} />
-          <TextField margin="dense" name="email" label="Email" fullWidth variant="outlined" value={currentLead.email} onChange={handleChange} />
-          <TextField margin="dense" name="phone" label="Phone" fullWidth variant="outlined" value={currentLead.phone} onChange={handleChange} />
-          <TextField margin="dense" name="company" label="Company" fullWidth variant="outlined" value={currentLead.company} onChange={handleChange} />
-          <Select fullWidth variant="outlined" name="status" value={currentLead.status} onChange={handleChange}>
-            {statusOptions.map((option) => (
-              <MenuItem key={option} value={option}>{option}</MenuItem>
-            ))}
-          </Select>
-        </DialogContent>
+  <TextField autoFocus margin="dense" name="name" label="Name" fullWidth value={currentLead.name} onChange={handleChange} />
+  <TextField margin="dense" name="position" label="Position" fullWidth value={currentLead.position} onChange={handleChange} />
+  <TextField margin="dense" name="email" label="Email" fullWidth value={currentLead.email} onChange={handleChange} />
+  <TextField margin="dense" name="phone" label="Phone" fullWidth value={currentLead.phone} onChange={handleChange} />
+  <TextField margin="dense" name="website" label="Website" fullWidth value={currentLead.website} onChange={handleChange} />
+  <TextField margin="dense" name="leadValue" label="Lead Value ($)" fullWidth type="number" value={currentLead.leadValue} onChange={handleChange} />
+  <TextField margin="dense" name="company" label="Company" fullWidth value={currentLead.company} onChange={handleChange} />
+  <TextField margin="dense" name="address" label="Address" fullWidth value={currentLead.address} onChange={handleChange} />
+  <TextField margin="dense" name="city" label="City" fullWidth value={currentLead.city} onChange={handleChange} />
+  <TextField margin="dense" name="state" label="State" fullWidth value={currentLead.state} onChange={handleChange} />
+  <TextField margin="dense" name="country" label="Country" fullWidth value={currentLead.country} onChange={handleChange} />
+  <TextField margin="dense" name="zipCode" label="Zip Code" fullWidth value={currentLead.zipCode} onChange={handleChange} />
+  <TextField margin="dense" name="defaultLanguage" label="Default Language" fullWidth value={currentLead.defaultLanguage} onChange={handleChange} />
+  <TextField margin="dense" name="description" label="Description" fullWidth multiline rows={3} value={currentLead.description} onChange={handleChange} />
+  
+  <Select fullWidth name="status" value={currentLead.status} onChange={handleChange}>
+    {statusOptions.map((option) => (
+      <MenuItem key={option} value={option}>{option}</MenuItem>
+    ))}
+  </Select>
+
+  <Select fullWidth name="source" value={currentLead.source} onChange={handleChange}>
+    <MenuItem value="Website">Website</MenuItem>
+    <MenuItem value="Referral">Referral</MenuItem>
+    <MenuItem value="Social Media">Social Media</MenuItem>
+  </Select>
+
+  <TextField margin="dense" name="tags" label="Tags (comma-separated)" fullWidth value={currentLead.tags} onChange={handleChange} />
+  <TextField margin="dense" name="assignedTo" label="Assigned To (User ID)" fullWidth value={currentLead.assignedTo} onChange={handleChange} />
+
+  <Typography>Public Contacted Today?</Typography>
+  <Checkbox checked={currentLead.publicContactedToday} onChange={() => setCurrentLead({ ...currentLead, publicContactedToday: !currentLead.publicContactedToday })} />
+</DialogContent>
+
         <DialogActions>
           <Button onClick={handleClose} color="secondary">Cancel</Button>
           <Button onClick={handleSaveLead} color="primary" variant="contained" disabled={loading}>

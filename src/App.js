@@ -12,6 +12,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
+import Role from "./pages/RoleManagement";
+
 import PrivateRoute from "./components/PrivateRoute";
 
 const App = () => {
@@ -61,6 +63,8 @@ const App = () => {
           {/* Protected Routes (Wrapped inside MainLayout) */}
           <Route element={<MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}>
             <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+            <Route path="/role" element={<PrivateRoute element={<Role />} />} />
+
             <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
             <Route path="/customers" element={<PrivateRoute element={<Customers />} />} />
             <Route path="/leads" element={<PrivateRoute element={<Leads />} />} />

@@ -24,6 +24,7 @@ const Login = () => {
     try {
       await dispatch(loginUser(loginData)).unwrap();
       toast.success("Login successful! Redirecting...");
+      navigate("/dashboard");
     } catch (error) {
       toast.error(error || "Invalid credentials. Please try again.");
     } finally {

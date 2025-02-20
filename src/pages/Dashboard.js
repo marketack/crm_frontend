@@ -32,6 +32,8 @@ const Dashboard = ({ darkMode }) => {
           { label: "Leads", value: data.leads, route: "/leads", color: "#3f51b5" },
           { label: "Customers", value: data.customers, route: "/customers", color: "#ff9800" },
           { label: "Tasks", value: data.tasks, route: "/tasks", color: "#4caf50" },
+          { label: "Roles", value: data.tasks, route: "/role", color: "#4caf50" },
+
         ].map((item, index) => (
           <Grid item xs={12} sm={4} key={index}>
             <Card

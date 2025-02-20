@@ -7,6 +7,7 @@ import {
   Typography,
   Container,
   CircularProgress,
+  MenuItem,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { registerUser } from "../services/authService";
@@ -15,10 +16,11 @@ const Signup = () => {
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
-    username: "", // Add username field
+    username: "",
     email: "",
-    phoneNumber: "", // Add phoneNumber field
+    phoneNumber: "",
     password: "",
+    role: "", // Ensure role selection
   });
 
   const [loading, setLoading] = useState(false);
@@ -55,6 +57,22 @@ const Signup = () => {
           <TextField fullWidth label="Phone Number" name="phoneNumber" type="tel" onChange={handleChange} required margin="normal" />
           <TextField fullWidth label="Email" name="email" type="email" onChange={handleChange} required margin="normal" />
           <TextField fullWidth label="Password" name="password" type="password" onChange={handleChange} required margin="normal" />
+          
+          {/* Role Selection */}
+          <TextField
+            select
+            fullWidth
+            label="Role"
+            name="role"
+            value={userData.role}
+            onChange={handleChange}
+            required
+            margin="normal"
+          >
+            <MenuItem value="admin">Admin</MenuItem>
+            <MenuItem value="user">User</MenuItem>
+          </TextField>
+
           <Button type="submit" fullWidth variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>
             {loading ? <CircularProgress size={24} /> : "Sign Up"}
           </Button>

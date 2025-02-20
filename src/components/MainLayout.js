@@ -10,7 +10,7 @@ const MainLayout = ({ darkMode, toggleDarkMode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
 
-  // ✅ Automatically redirect to "/" if no token
+  // ✅ Automatically redirect to "/" if there's no access or refresh token
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -19,7 +19,7 @@ const MainLayout = ({ darkMode, toggleDarkMode }) => {
     }
   }, [navigate]);
 
-  // ✅ Logout and ensure token is cleared before redirect
+  // ✅ Logout and navigate to "/"
   const logout = async () => {
     await handleLogout(navigate);
   };

@@ -1,17 +1,32 @@
 import React from "react";
-import { Drawer, List, ListItem, ListItemText, ListItemIcon, Divider, IconButton, Toolbar, Typography, Box, Button } from "@mui/material";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  IconButton,
+  Toolbar,
+  Typography,
+  Box,
+  Button
+} from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import { useSelector } from "react-redux";
 
 const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen, onLogout }) => {
   const location = useLocation();
+  const userRole = useSelector((state) => state.auth.user?.role); // Get user role from Redux
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, route: "/dashboard" },
@@ -19,8 +34,13 @@ const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen, onLogout }) => {
     { text: "Customers", icon: <PeopleIcon />, route: "/customers" },
     { text: "Tasks", icon: <AssignmentIcon />, route: "/tasks" },
     { text: "Support", icon: <SupportAgentIcon />, route: "/support" },
-    { text: "Settings", icon: <SettingsIcon />, route: "/profile" },
+    { text: "Settings", icon: <SettingsIcon />, route: "/profile" }
   ];
+
+  // Show Role Management only for Admins
+  if (userRole === "admin") {
+    menuItems.push({ text: "Role Management", icon: <AdminPanelSettingsIcon />, route: "/role-management" });
+  }
 
   return (
     <Drawer

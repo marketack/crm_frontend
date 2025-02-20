@@ -12,7 +12,7 @@ export const handleLogout = async (navigate) => {
     localStorage.removeItem("user");
 
     // ✅ Call logout API (even if CORS is removed)
-    await API.post("/api/auth/logout", {}, { withCredentials: true });
+    await API.post("/auth/logout", {}, { withCredentials: true });
 
     console.log("✅ Logout successful!");
 
