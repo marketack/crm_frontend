@@ -23,7 +23,7 @@ const Courses = () => {
   const [alert, setAlert] = useState<{ message: string; severity: "success" | "error" } | null>(null);
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
-  const isAdminOrInstructor = user?.roles?.includes("admin") || user?.roles?.includes("instructor");
+  const isAdminOrInstructor = user?.role?.includes("admin") || user?.role?.includes("instructor");
 
   useEffect(() => {
     fetchCourses();

@@ -18,7 +18,7 @@ const CourseDetail = () => {
   const [isEnrolled, setIsEnrolled] = useState(false);
 
   const user = useAppSelector((state) => state.auth.user);
-  const isAdminOrInstructor = user?.roles?.includes("admin") || user?.roles?.includes("instructor");
+  const isAdminOrInstructor = user?.role?.includes("admin") || user?.role?.includes("instructor");
 
   useEffect(() => {
     fetchCourseDetails();

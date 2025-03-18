@@ -26,6 +26,19 @@ export interface Service {
   features: string[];
 }
 
+export interface TeamMember {
+  _id: string;
+  name: string;
+  email: string;
+  position: string;
+  profileImage: string;
+}
+
+// ✅ Define API response type for team members
+interface TeamResponse {
+  success: boolean;
+  employees: TeamMember[];
+}
 const cmsService = {
   /**
    * ✅ Fetch Company Details
@@ -54,11 +67,22 @@ const cmsService = {
   /**
    * ✅ Fetch Team Members
    */
-  getTeam: async () => {
-    const response = await axios.get(`${CMS_API_URL}/team`);
-    return response.data;
+  getTeam: async (): Promise<TeamMember[]> => {
+    try {
+      const response = await axios.get<TeamResponse>(`${CMS_API_URL}/team`);
+      
+      // ✅ Ensure response contains the employees array
+      if (response.data.success && Array.isArray(response.data.employees)) {
+        return response.data.employees;
+      } else {
+        console.error("API response did not contain employees:", response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      return [];
+    }
   },
-
   /**
    * ✅ Fetch Contact Information
    */
@@ -95,7 +119,7 @@ const cmsService = {
    * ✅ Add Blog Post (Admin) - Supports FormData for Image Uploads
    */
   addBlogPost: async (blogData: FormData, token: string) => {
-    const response = await axios.post(`${CMS_API_URL}/add-blog`, blogData, {
+    const response = await axios.post(`${CMS_API_URL}/blogs`, blogData, {
       headers: { Authorization: `Bearer ${token}` }, // FormData handles Content-Type automatically
     });
     return response.data;

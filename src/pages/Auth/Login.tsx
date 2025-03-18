@@ -12,7 +12,9 @@ import {
   Paper,
   Alert,
   AlertTitle,
-  useTheme, // ✅ Import Theme Hook
+  useTheme,
+  FormControlLabel,
+  Checkbox, // ✅ Import Checkbox for "Keep Me Signed In"
 } from "@mui/material";
 import { useAppDispatch } from "../../redux/store";
 import { userLogin } from "../../redux/slices/authSlice";
@@ -23,10 +25,11 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 const Login = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const theme = useTheme(); // ✅ Get current theme (Dark/Light)
+  const theme = useTheme();
 
   // ✅ State Management
   const [credentials, setCredentials] = useState<LoginCredentials>({ email: "", password: "" });
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false); // ✅ "Keep Me Signed In"
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -52,15 +55,20 @@ const Login = () => {
 
     try {
       console.log("🔍 Sending Login Request:", credentials);
-      const result = await dispatch(userLogin(credentials)).unwrap();
+      const result = await dispatch(userLogin({ ...credentials, keepMeSignedIn })).unwrap();
 
       localStorage.setItem("token", result.token);
       localStorage.setItem("userId", result.user._id);
 
+      // ✅ Store refresh token only if "Keep Me Signed In" is checked
+      if (keepMeSignedIn) {
+        localStorage.setItem("refreshToken", result.refreshToken);
+      }
+
       console.log("✅ Login successful! User ID:", result.user._id);
       setSuccessMessage("✅ Login successful! Redirecting...");
 
-      setTimeout(() => navigate("/"), 2000); // Redirect after success
+      setTimeout(() => navigate("/"), 2000);
     } catch (error) {
       setErrorMessage(typeof error === "string" ? error : "❌ Login failed. Please check your credentials.");
     } finally {
@@ -75,7 +83,7 @@ const Login = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: theme.palette.background.default, // ✅ Dynamic Background from Theme
+        background: theme.palette.background.default,
       }}
     >
       <Container maxWidth="xs">
@@ -85,7 +93,7 @@ const Login = () => {
             padding: 4,
             borderRadius: 2,
             textAlign: "center",
-            background: theme.palette.background.paper, // ✅ Match paper background with theme
+            background: theme.palette.background.paper,
           }}
         >
           <Typography variant="h4" color="primary" fontWeight="bold" gutterBottom>
@@ -137,6 +145,12 @@ const Login = () => {
                 </InputAdornment>
               ),
             }}
+          />
+
+          {/* ✅ "Keep Me Signed In" Checkbox */}
+          <FormControlLabel
+            control={<Checkbox checked={keepMeSignedIn} onChange={(e) => setKeepMeSignedIn(e.target.checked)} />}
+            label="Keep me signed in"
           />
 
           {/* ✅ Login Button */}

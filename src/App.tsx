@@ -13,11 +13,33 @@ import Home from "./pages/Home";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import VerifyEmail from "./pages/Auth/VerifyEmail";
-import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 import UserProfile from "./pages/User/MainDashboard";
 import Courses from "./pages/Courses/Courses";
-import CourseDetail from "./pages/Courses/CourseDetail"; 
+import CourseDetail from "./pages/Courses/CourseDetail";
 import SaasTools from "./pages/SaaS/SaasTools";
+import MainCrm from "./pages/crm/MainCrm";
+
+// ✅ CRM Pages
+import Dashboard from "./pages/crm/components/Dashboard";
+
+import Leads from "./pages/crm/components/Leads";
+import Deals from "./pages/crm/components/Deals";
+import Projects from "./pages/crm/components/Projects";
+
+import Tasks from "./pages/crm/components/Tasks";
+import Invoices from "./pages/crm/components/Invoices";
+import Transactions from "./pages/crm/components/Transactions";
+import Tickets from "./pages/crm/components/Tickets";
+import Files from "./pages/crm/components/Files";
+import Logs from "./pages/crm/components/Logs";
+import Contacts from "./pages/crm/components/Contacts";
+import Feedback from "./pages/crm/components/Feedback";
+
+// ✅ Admin Dashboard Subpages (Moved under CRM)
+import RolesManagement from "./pages/crm/components/RolesManagement";
+
+import SubscriptionsManagement from "./pages/crm/components/SubscriptionsManagement";
+import CmsManagement from "./pages/crm/components/CmsManagement";
 
 // ✅ Create Global Snackbar Context
 const SnackbarContext = createContext<
@@ -49,31 +71,25 @@ const App: React.FC = () => {
           <Router>
             {/* ✅ Layout Wrapper */}
             <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-              <Navbar />
-              <Box sx={{ flexGrow: 1, mt: "64px", overflowY: "auto" }}>
+              {/* ✅ Navbar with Fixed Bottom Margin */}
+              <Box sx={{ height: "64px", width: "100%", mb: 2 }}> 
+                <Navbar />
+              </Box>
+
+              {/* ✅ Page Content with Top Padding to Avoid Overlap */}
+              <Box sx={{ flexGrow: 1, paddingTop: "20px", overflowY: "auto" }}>
                 <Routes>
+                  {/* ✅ Public Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/verify-email" element={<VerifyEmail />} />
 
-                  {/* ✅ Admin Dashboard */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute requiredRoles={["admin"]}>
-                        <AdminDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-
                   {/* ✅ SaaS Tools */}
                   <Route
                     path="/saas-tools"
                     element={
-                      <ProtectedRoute requiredRoles={["admin", "staff"]}>
                         <SaasTools />
-                      </ProtectedRoute>
                     }
                   />
 
@@ -81,31 +97,55 @@ const App: React.FC = () => {
                   <Route
                     path="/user/profile/:userId"
                     element={
-                      <ProtectedRoute requiredRoles={["admin", "owner"]}>
+                      <ProtectedRoute requiredRoles={["admin", "owner","customer","staff"]}>
                         <UserProfile />
                       </ProtectedRoute>
                     }
                   />
 
-                  {/* ✅ Public Routes */}
+                  {/* ✅ Courses */}
                   <Route path="/courses" element={<Courses />} />
                   <Route path="/courses/:courseId" element={<CourseDetail />} />
-
-                  {/* ✅ Manage Courses */}
                   <Route
                     path="/admin/courses"
                     element={
-                      <ProtectedRoute requiredRoles={["admin", "staff"]}>
+                      <ProtectedRoute requiredRoles={["admin", "staff","owner"]}>
                         <Courses />
                       </ProtectedRoute>
                     }
                   />
-                </Routes>
-              </Box>
 
-              {/* ✅ Footer (Optional) */}
-              <Box component="footer" sx={{ p: 2, textAlign: "center", bgcolor: "#f0f0f0" }}>
-                © 2025 Marketack - All Rights Reserved.
+                  {/* ✅ CRM Main Page with Sidebar */}
+                  <Route
+                    path="/crm"
+                    element={
+                      <ProtectedRoute requiredRoles={["admin", "staff","owner"]}>
+                        <MainCrm />
+                      </ProtectedRoute>
+                    }
+                  >
+                    {/* ✅ CRM Subpages */}
+                    <Route path="dashboard" element={<Dashboard />} />
+
+                    <Route path="leads" element={<Leads />} />
+                    <Route path="deals" element={<Deals />} />
+                   <Route path="projects" element={<Projects />} />
+                    <Route path="tasks" element={<Tasks />} />
+                    <Route path="invoices" element={<Invoices />} />
+                    <Route path="transactions" element={<Transactions />} />
+                    <Route path="tickets" element={<Tickets />} />
+                    <Route path="files" element={<Files />} />
+                    <Route path="logs" element={<Logs />} />
+                    <Route path="contacts" element={<Contacts />} />
+                    <Route path="feedback" element={<Feedback />} />
+
+                    {/* ✅ Admin Subsections under CRM */}
+                    <Route path="roles" element={<RolesManagement />} />
+
+                    <Route path="subscriptions" element={<SubscriptionsManagement />} />
+                    <Route path="cms" element={<CmsManagement />} />
+                  </Route>
+                </Routes>
               </Box>
             </Box>
           </Router>

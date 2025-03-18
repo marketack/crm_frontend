@@ -12,12 +12,12 @@ const themeSlice = createSlice({
   name: "theme",
   initialState,
   reducers: {
-    toggleDarkMode: (state) => {
+    toggleTheme: (state) => { // Rename to toggleTheme
       state.darkMode = !state.darkMode;
-      localStorage.setItem("darkMode", state.darkMode.toString()); // Save preference
+      localStorage.setItem("darkMode", state.darkMode.toString());
     },
   },
 });
 
-export const { toggleDarkMode } = themeSlice.actions;
+export const { toggleTheme } = themeSlice.actions; // Export toggleTheme
 export default themeSlice.reducer;

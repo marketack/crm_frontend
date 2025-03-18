@@ -1,21 +1,14 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { useAppSelector, useAppDispatch } from "../redux/store";
-import { toggleDarkMode } from "../redux/slices/themeSlice";
-
-// Icons
-import MenuIcon from "@mui/icons-material/Menu";
-import Brightness4 from "@mui/icons-material/Brightness4";
-import Brightness7 from "@mui/icons-material/Brightness7";
+import { useAppSelector } from "../redux/store";
 
 // ✅ Define TypeScript Props
 interface SidebarProps {
@@ -25,9 +18,9 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ sections, activeSection, setActiveSection }) => {
-  const dispatch = useAppDispatch();
   const darkMode = useAppSelector((state) => state.theme.darkMode);
-  const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate(); // ✅ React Router Hook for navigation
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
     <motion.div
@@ -36,21 +29,19 @@ const Sidebar: React.FC<SidebarProps> = ({ sections, activeSection, setActiveSec
       transition={{ duration: 0.5 }}
     >
       <Box
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         sx={{
-          width: hovered ? 220 : 80,
+          width: 80,
           height: "100vh",
-          backdropFilter: "blur(20px)",
-          backgroundColor: darkMode ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+          backdropFilter: "blur(10px)", // ✅ Transparent but blurred effect
+          backgroundColor: "rgba(0, 0, 0, 0.05)", // ✅ Keeps the sidebar visible subtly
           color: darkMode ? "#fff" : "#333",
           position: "fixed",
           left: 0,
           top: 0,
           display: "flex",
           flexDirection: "column",
-          alignItems: hovered ? "flex-start" : "center",
-          justifyContent: "space-between",
+          alignItems: "center",
+          justifyContent: "center",
           padding: "16px",
           boxShadow: darkMode
             ? "4px 0px 20px rgba(0, 0, 0, 0.8)"
@@ -59,42 +50,70 @@ const Sidebar: React.FC<SidebarProps> = ({ sections, activeSection, setActiveSec
           transition: "width 0.3s ease-in-out",
         }}
       >
-     
         {/* 📌 Sidebar Menu Items */}
         <List sx={{ width: "100%", textAlign: "center" }}>
-          {sections.map((item) => (
-            <motion.div key={item.value} whileHover={{ scale: 1.1 }}>
-              <Tooltip title={hovered ? "" : item.label} placement="right">
-                <ListItemButton
-                  onClick={() => setActiveSection(item.value)}
-                  selected={activeSection === item.value}
-                  sx={{
-                    display: "flex",
-                    justifyContent: hovered ? "flex-start" : "center",
-                    borderRadius: "10px",
-                    marginBottom: "8px",
-                    padding: "12px",
-                    color: activeSection === item.value ? "#fff" : darkMode ? "#bbb" : "#333",
-                    backgroundColor: activeSection === item.value
-                      ? darkMode
-                        ? "#ffea00"
-                        : "#6200ea"
-                      : "transparent",
-                    transition: "all 0.3s ease-in-out",
-                    "&:hover": {
-                      backgroundColor: darkMode ? "#3a3a4d" : "#f0f0f0",
-                    },
+          {sections.map((item, index) => (
+            <motion.div
+              key={item.value}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              whileHover={{ scale: 1.1 }}
+              style={{ position: "relative" }}
+            >
+              <ListItemButton
+                onClick={() => {
+                  setActiveSection(item.value);
+                  navigate(`/crm/${item.value}`); // ✅ Navigate to the correct path
+                }}
+                selected={activeSection === item.value}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  borderRadius: "10px",
+                  marginBottom: "8px",
+                  padding: "12px",
+                  color: activeSection === item.value ? "#fff" : darkMode ? "#bbb" : "#333",
+                  backgroundColor: activeSection === item.value
+                    ? darkMode
+                      ? "#ffea00"
+                      : "#6200ea"
+                    : "transparent",
+                  transition: "all 0.3s ease-in-out",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)", // ✅ Light transparent hover effect
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>{item.icon}</ListItemIcon>
+              </ListItemButton>
+
+              {/* ✅ Tooltip Hover Effect (Fixed Duplicate Issue) */}
+              {hoveredIndex === index && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  style={{
+                    position: "absolute",
+                    left: 80,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: darkMode ? "#222" : "#fff",
+                    color: darkMode ? "#fff" : "#000",
+                    padding: "6px 12px",
+                    borderRadius: "5px",
+                    boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+                    whiteSpace: "nowrap",
+                    fontSize: "14px",
+                    fontWeight: "bold",
                   }}
                 >
-                  <ListItemIcon sx={{ color: "inherit" }}>{item.icon}</ListItemIcon>
-                  {hovered && <ListItemText primary={item.label} />}
-                </ListItemButton>
-              </Tooltip>
+                  {item.label}
+                </motion.div>
+              )}
             </motion.div>
           ))}
         </List>
-
-    
       </Box>
     </motion.div>
   );

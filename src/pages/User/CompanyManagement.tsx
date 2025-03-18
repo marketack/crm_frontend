@@ -1,237 +1,306 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import {
   Container,
-  Paper,
   Typography,
-  TextField,
   Button,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Snackbar,
+  Alert,
+  TextField,
   Grid,
   Card,
   CardContent,
-  IconButton,
-  Snackbar,
-  Alert,
-  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Collapse,
-} from "@mui/material";
-import { Add as AddIcon, Delete as DeleteIcon, ExpandMore, ExpandLess } from "@mui/icons-material";
-import { createCompany, getAllCompanies, deleteCompany } from "../../api/companyService";
+  Paper,
+  Box,
 
-// ✅ Define Company Interface
-export interface Company {
-  _id: string;
-  name: string;
-  industry: string;
-  email: string;
-  phone: string;
-  aboutUs: string;
-  website?: string;
-  address?: string;
-  createdBy: string;
-  updatedBy: string;
-  subscriptionPlan: string;
-  subscriptionStatus: string;
-  createdAt?: string;
-  updatedAt?: string;
+} from "@mui/material";
+import { AddCircleOutline, RemoveCircleOutline, Business, Apartment, Edit, Delete } from "@mui/icons-material";
+import { getAllCompanies, createCompany, updateCompany, deleteCompany } from "../../api/companyService";
+import { Company } from "../../api/companyService";
+import { useSelector } from "react-redux";
+
+const initialState = {
+  name: "",
+  industry: "",
+  email: "",
+  phone: "",
+  website: "",
+  aboutUs: "",
+  address: "",
+  employees: [],
+  subscriptionPlan: "free",
+  subscriptionStatus: "active",
+};
+
+const formReducer = (state: typeof initialState, action: { type: string; field?: string; value?: any }) => {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field!]: action.value };
+    case "RESET":
+      return initialState;
+    default:
+      return state;
+  }
+};
+
+interface CompanyManagementProps {
+  onCompanySelect: (companyId: string) => void;
+
 }
 
-const CompanyManagement: React.FC = () => {
-  // ✅ Form Fields
-  const [companyData, setCompanyData] = useState<Partial<Company>>({
-    name: "",
-    industry: "",
-    email: "",
-    phone: "",
-    aboutUs: "We are a technology-driven company.",
-    website: "",
-    address: "",
-  });
-
-  // ✅ State for Companies
+const CompanyManagement: React.FC<CompanyManagementProps> = ({ onCompanySelect }) => {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [expandedRow, setExpandedRow] = useState<string | null>(null); // ✅ Expanded row for About Us
-  const [alert, setAlert] = useState<{ message: string; severity: "success" | "error" | "warning" | "info" } | null>(
-    null
-  );
+  const [alert, setAlert] = useState<{ message: string; severity: "success" | "error" }>({
+    message: "",
+    severity: "success",
+  });
+  const [formState, dispatch] = useReducer(formReducer, initialState);
+  const [showAddCompany, setShowAddCompany] = useState<boolean>(false);
+  const [editing, setEditing] = useState(false);
+
+  const darkMode = useSelector((state: any) => state.theme.darkMode);
+  const themeTextColor = darkMode ? "#FFFFFF" : "#000000";
+  const cardBgColor = darkMode ? "#252525" : "#FFFFFF";
 
   useEffect(() => {
     fetchCompanies();
   }, []);
 
-  // ✅ Fetch Companies
   const fetchCompanies = async () => {
     setLoading(true);
     try {
       const response = await getAllCompanies();
-      console.log("🔵 API Response:", response);
-
-      if (response && "success" in response && Array.isArray(response.companies)) {
-        setCompanies(response.companies);
-      } else {
-        setCompanies([]);
+  
+      if ("success" in response && !response.success) {
+        // ✅ Handle API errors correctly
+        console.error("❌ Error fetching company:", response.message);
+        setAlert({ message: response.message, severity: "error" });
+        setCompanies([]); // ✅ Clear companies in case of error
+        return;
       }
-    } catch (error) {
-      console.error("❌ Error fetching companies:", error);
+  
+      // ✅ Ensure we have a valid company object
+      console.log("✅ Company Fetched:", response);
+      setCompanies([response as Company]); // ✅ Explicitly cast to Company for TypeScript
+    } catch (error: any) {
+      console.error("❌ Error fetching company:", error);
+      setAlert({ message: `❌ Error: ${error.message || "Failed to load company"}`, severity: "error" });
       setCompanies([]);
-      setAlert({ message: "❌ Error fetching companies", severity: "error" });
     } finally {
       setLoading(false);
     }
   };
-
-  // ✅ Handle Input Change
-  const handleInputChange = (field: keyof Company, value: string) => {
-    setCompanyData((prev) => ({ ...prev, [field]: value }));
+  
+  
+  
+  const handleCompanySelect = (companyId: string) => {
+    const company = companies.find((c) => c._id === companyId) || null;
+    setSelectedCompany(company);
+    onCompanySelect(companyId); // ✅ This ensures departments can be accessed after selection
   };
 
-  // ✅ Create Company
   const handleCreateCompany = async () => {
-    if (!companyData.name || !companyData.industry || !companyData.email || !companyData.phone || !companyData.aboutUs) {
-      setAlert({ message: "⚠️ Please fill in all required fields.", severity: "warning" });
+    if (!formState.name || !formState.industry || !formState.email || !formState.phone || !formState.address || !formState.website) {
+      setAlert({ message: "⚠️ Please fill in all required fields", severity: "error" });
+      return;
+    }
+
+    const storedUser = localStorage.getItem("user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
+    if (!user || !user.id) {
+      setAlert({ message: "❌ User authentication error. Please log in again.", severity: "error" });
       return;
     }
 
     setCreating(true);
     try {
-      await createCompany(companyData as Company);
-      setAlert({ message: "✅ Company created successfully!", severity: "success" });
-      setCompanyData({ name: "", industry: "", email: "", phone: "", aboutUs: "", website: "", address: "" });
-      fetchCompanies();
-    } catch (error) {
-      setAlert({ message: "❌ Failed to create company", severity: "error" });
+      const requestData = {
+        ...formState,
+        createdBy: user.id,
+        updatedBy: user.id,
+      };
+
+      console.log("📡 Sending Create Company Request:", requestData);
+
+      const response = await createCompany(requestData);
+      if ("success" in response && response.success) {
+        setAlert({ message: "✅ Company added successfully!", severity: "success" });
+        dispatch({ type: "RESET" });
+        fetchCompanies();
+        setShowAddCompany(false);
+      } else {
+        throw new Error("Failed to create company");
+      }
+    } catch (error: any) {
+      setAlert({ message: "❌ Failed to add company", severity: "error" });
     } finally {
       setCreating(false);
     }
   };
 
-  // ✅ Delete a Company
-  const handleDeleteCompany = async (companyId: string) => {
-    setDeleting(companyId);
+  const handleEditCompany = async () => {
+    if (!selectedCompany) return;
     try {
-      await deleteCompany(companyId);
-      setAlert({ message: "✅ Company deleted successfully!", severity: "success" });
+      await updateCompany(selectedCompany._id, selectedCompany);
+      setAlert({ message: "✅ Company updated successfully!", severity: "success" });
       fetchCompanies();
+      setEditing(false);
     } catch (error) {
-      setAlert({ message: "❌ Failed to delete company", severity: "error" });
-    } finally {
-      setDeleting(null);
+      setAlert({ message: "❌ Failed to update company.", severity: "error" });
     }
   };
 
-  // ✅ Toggle Expand for About Us
-  const toggleExpand = (companyId: string) => {
-    setExpandedRow(expandedRow === companyId ? null : companyId);
+  const handleDeleteCompany = async () => {
+    if (!selectedCompany) return;
+    try {
+      await deleteCompany(selectedCompany._id);
+      setAlert({ message: "✅ Company deleted successfully!", severity: "success" });
+      setSelectedCompany(null);
+      fetchCompanies();
+    } catch (error) {
+      setAlert({ message: "❌ Failed to delete company.", severity: "error" });
+    }
   };
 
   return (
-    <Container maxWidth="lg">
-      {/* ✅ Snackbar for Alerts */}
-      <Snackbar open={!!alert} autoHideDuration={3000} onClose={() => setAlert(null)}>
-  {alert ? <Alert severity={alert.severity}>{alert.message}</Alert> : <div />} 
-</Snackbar>
+    <Container maxWidth="lg" sx={{ mt: 4, color: themeTextColor }}>
+      <Snackbar open={!!alert.message} autoHideDuration={3000} onClose={() => setAlert({ message: "", severity: "success" })}>
+        <Alert severity={alert.severity}>{alert.message}</Alert>
+      </Snackbar>
 
-
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold", textAlign: "center" }}>
+      <Typography variant="h4" sx={{ textAlign: "center", my: 3, fontWeight: "bold" }}>
         🏢 Company Management
       </Typography>
 
       <Grid container spacing={3}>
-        {/* ✅ Company Creation Form */}
-        <Grid item xs={12} md={4}>
-          <Card elevation={3} sx={{ p: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card elevation={4} sx={{ p: 3, borderRadius: 2, bgcolor: cardBgColor }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                Create a New Company
+                <Business sx={{ verticalAlign: "middle", mr: 1 }} />
+                Select a Company
               </Typography>
-              {["name", "industry", "email", "phone", "aboutUs", "website", "address"].map((field) => (
-                <TextField
-                  key={field}
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={companyData[field as keyof Company] || ""}
-                  onChange={(e) => handleInputChange(field as keyof Company, e.target.value)}
-                  fullWidth
-                  sx={{ mb: 2 }}
-                  multiline={field === "aboutUs"}
-                  required={["name", "industry", "email", "phone", "aboutUs"].includes(field)}
-                />
-              ))}
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Select Company</InputLabel>
+                <Select
+                  value={selectedCompany?._id || ""}
+                  onChange={(e) => handleCompanySelect(e.target.value)}
+                >
+                  {companies.map((company) => (
+                    <MenuItem key={company._id} value={company._id}>
+                      {company.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Button
                 variant="contained"
+                startIcon={showAddCompany ? <RemoveCircleOutline /> : <AddCircleOutline />}
                 fullWidth
-                startIcon={<AddIcon />}
-                onClick={handleCreateCompany}
-                sx={{ mt: 2, backgroundColor: "#1976d2", color: "#fff", "&:hover": { backgroundColor: "#115293" } }}
-                disabled={creating}
+                onClick={() => setShowAddCompany(!showAddCompany)}
               >
-                {creating ? <CircularProgress size={24} /> : "Add Company"}
+                {showAddCompany ? "Hide Form" : "Add New Company"}
               </Button>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* ✅ Company List Table */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-              Existing Companies
-            </Typography>
-            {loading ? (
-              <CircularProgress sx={{ display: "block", margin: "auto" }} />
-            ) : companies.length > 0 ? (
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: "bold" }}>Company Name</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Industry</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>About Us</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {companies.map((company) => (
-                      <React.Fragment key={company._id}>
-                        <TableRow>
-                          <TableCell>{company.name}</TableCell>
-                          <TableCell>{company.industry}</TableCell>
-                          <TableCell>{company.email}</TableCell>
-                          <TableCell>
-                            <Tooltip title={company.aboutUs} arrow>
-                              <Typography sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
-                                {company.aboutUs.slice(0, 50)}...
-                              </Typography>
-                            </Tooltip>
-                          </TableCell>
-                          <TableCell>
-                            <IconButton onClick={() => handleDeleteCompany(company._id)} color="error">
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography>No companies found</Typography>
-            )}
-          </Paper>
+        <Grid item xs={12} md={6}>
+          <Collapse in={showAddCompany}>
+            <Card elevation={4} sx={{ p: 3, borderRadius: 2, bgcolor: cardBgColor }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
+                  <Apartment sx={{ verticalAlign: "middle", mr: 1 }} />
+                  Add New Company
+                </Typography>
+                {Object.keys(initialState).slice(0, 7).map((field) => (
+                  <TextField
+                    key={field}
+                    label={field.charAt(0).toUpperCase() + field.slice(1)}
+                    value={formState[field as keyof typeof formState]}
+                    onChange={(e) => dispatch({ type: "SET_FIELD", field, value: e.target.value })}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                    multiline={field === "aboutUs" || field === "address"}
+                  />
+                ))}
+                <Button variant="contained" fullWidth onClick={handleCreateCompany} disabled={creating} sx={{ mt: 2 }}>
+                  {creating ? <CircularProgress size={24} /> : "Add Company"}
+                </Button>
+              </CardContent>
+            </Card>
+          </Collapse>
         </Grid>
+
+        {selectedCompany && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Company Details</Typography>
+              
+              {editing ? (
+                Object.keys(initialState).slice(0, 7).map((field) => (
+                  <TextField
+                    key={field}
+                    label={field.charAt(0).toUpperCase() + field.slice(1)}
+                    value={selectedCompany[field as keyof Company] || ""}
+                    onChange={(e) => setSelectedCompany({ ...selectedCompany, [field]: e.target.value })}
+                    fullWidth
+                    sx={{ mb: 2, mt: 1 }}
+                  />
+                ))
+              ) : (
+                <>
+                  <Typography>Name: {selectedCompany.name}</Typography>
+                  <Typography>Industry: {selectedCompany.industry}</Typography>
+                  <Typography>Email: {selectedCompany.email}</Typography>
+                  <Typography>Phone: {selectedCompany.phone}</Typography>
+                  <Typography>Website: {selectedCompany.website}</Typography>
+                  <Typography>Address: {selectedCompany.address}</Typography>
+                  <Typography>About Us: {selectedCompany.aboutUs}</Typography>
+                </>
+              )}
+
+              <Box sx={{ mt: 2 }}>
+                {editing ? (
+                  <>
+                    <Button variant="contained" sx={{ mr: 2 }} onClick={handleEditCompany}>
+                      Save Changes
+                    </Button>
+                    <Button variant="outlined" onClick={() => setEditing(false)}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button startIcon={<Edit />} sx={{ mr: 2 }} onClick={() => setEditing(true)}>
+                      Edit
+                    </Button>
+                    <Button startIcon={<Delete />} color="error" onClick={handleDeleteCompany}>
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
     </Container>
   );
 };
 
+
 export default CompanyManagement;
+
+
+
+

@@ -1,73 +1,162 @@
-import axios from "axios";
-import API_BASE_URL from "./apiConfig";
+import apiBase from "./apiBase";
 
-const USER_API_URL = `${API_BASE_URL}/user`;
+interface Role {
+  _id: string;
+  name: string;
+}
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
 
-// ✅ Ensure headers exist before modifying
-api.interceptors.request.use((config) => {
-  if (!config.headers) {
-    config.headers = {};
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  subscriptionPlan: string;
+  profileImage?: string;
+  role: Role;
+}
+
+
+export interface ActivityLog {
+  _id: string;
+  userId: { _id: string; name: string; email: string };
+  action: string;
+  timestamp: string;
+  ipAddress?: string;
+}
+
+/** ✅ Get User Profile */
+export const getUserProfile = async (userId: string): Promise<User> => {
+  try {
+    const response = await apiBase.get<User>(`/users/${userId}`); // ✅ Matches new route
+    return response.data; 
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
   }
+};
 
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+/** ✅ Get User Activity Logs */
+export const getUserActivityLogs = async (userId: string): Promise<ActivityLog[]> => {
+  try {
+    const response = await apiBase.get<{ logs: ActivityLog[] }>(`/users/${userId}/activity-logs`); // ✅ Matches new route
+    return response.data.logs || [];
+  } catch (error) {
+    console.error("Error fetching user activity logs:", error);
+    return [];
   }
-
-  return config;
-});
-
-/**
- * ✅ User API Services
- */
-export const getUserProfile = (userId: string) => {
-  console.log(`🔵 Fetching User Profile: ${USER_API_URL}/profile/${userId}`);
-  return api.get(`${USER_API_URL}/profile/${userId}`);
 };
 
-export const updateUserProfile = (userId: string, data: any) => {
-  console.log(`🟠 Updating User Profile: ${USER_API_URL}/profile/${userId}`);
-  return api.put(`${USER_API_URL}/profile/${userId}`, data);
+/** ✅ Update User Profile */
+export const updateUserProfile = async (userId: string, updateData: Partial<User>) => {
+  try {
+    await apiBase.put(`/users/${userId}`, updateData); // ✅ Matches new route
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
 };
 
-export const getUserActivityLogs = () => {
-  console.log(`📜 Fetching Activity Logs: ${USER_API_URL}/activity-logs`);
-  return api.get(`${USER_API_URL}/activity-logs`);
+/** ✅ Generate API Key */
+export const generateApiKey = async (userId: string) => {
+  try {
+    const response = await apiBase.post(`/users/${userId}/api-key`);
+    return response.data;
+  } catch (error) {
+    console.error("Error generating API key:", error);
+    throw error;
+  }
 };
 
-export const generateApiKeyForUser = () => {
-  console.log(`🔑 Generating API Key: ${USER_API_URL}/api-key`);
-  return api.post(`${USER_API_URL}/api-key`);
+/** ✅ Revoke API Key */
+export const revokeApiKey = async (userId: string) => {
+  try {
+    await apiBase.delete(`/users/${userId}/api-key`);
+  } catch (error) {
+    console.error("Error revoking API key:", error);
+    throw error;
+  }
 };
 
-export const revokeApiKeyForUser = (apiKey: string) => {
-  console.log(`🚫 Revoking API Key: ${USER_API_URL}/api-key`);
-  return api.delete(`${USER_API_URL}/api-key`, { params: { apiKey } });
+/** ✅ Deactivate User */
+export const deactivateUser = async (userId: string) => {
+  try {
+    await apiBase.put(`/users/${userId}/deactivate`); // ✅ Matches new route
+  } catch (error) {
+    console.error("Error deactivating user:", error);
+    throw error;
+  }
 };
 
-export const deactivateUser = () => {
-  console.log(`🛑 Deactivating User: ${USER_API_URL}/deactivate`);
-  return api.put(`${USER_API_URL}/deactivate`);
+/** ✅ Delete User */
+export const deleteUser = async (userId: string) => {
+  try {
+    await apiBase.delete(`/users/${userId}`); // ✅ Matches new route
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
 };
 
-export const deleteUser = () => {
-  console.log(`❌ Deleting User: ${USER_API_URL}`);
-  return api.delete(`${USER_API_URL}`);
+/** ✅ Get User Subscription Status */
+export const getUserSubscriptionStatus = async (userId: string): Promise<{ apiKey?: string }> => {
+  try {
+    const response = await apiBase.get<{ apiKey?: string }>(`/users/${userId}/subscriptions`);
+    return { apiKey: response.data.apiKey ?? null }; // ✅ Ensure `apiKey` always exists
+  } catch (error) {
+    console.error("Error fetching subscription status:", error);
+    return { apiKey: null };
+  }
 };
 
-export default {
-  getUserProfile,
-  updateUserProfile,
-  getUserActivityLogs,
-  generateApiKeyForUser,
-  revokeApiKeyForUser,
-  deactivateUser,
-  deleteUser,
+
+export const uploadProfileImage = async (userId: string, file: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("userId", userId);
+
+    const response = await apiBase.post<{ imageUrl: string }>("users/upload-profile-image", formData, {
+      headers: { "Content-Type": "multipart/form-data" }, // ✅ Required for file uploads
+    });
+
+    return response.data.imageUrl; // ✅ Return the uploaded image URL
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    throw error;
+  }
+};
+
+// ✅ Verify Email
+export const verifyEmail = async (userId: string) => {
+  try {
+    const response = await apiBase.post(`/users/${userId}/verify-email`);
+    return response.data;
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    throw error;
+  }
+};
+
+// ✅ Verify Phone
+export const verifyPhone = async (userId: string) => {
+  try {
+    const response = await apiBase.post(`/users/${userId}/verify-phone`);
+    return response.data;
+  } catch (error) {
+    console.error("Error verifying phone:", error);
+    throw error;
+  }
+};
+
+// ✅ Change User Password
+export const changeUserPassword = async (userId: string) => {
+  try {
+    const response = await apiBase.post(`/users/${userId}/change-password`);
+    return response.data;
+  } catch (error) {
+    console.error("Error changing password:", error);
+    throw error;
+  }
 };

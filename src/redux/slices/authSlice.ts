@@ -2,67 +2,96 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { login, logout, register, verifyEmail } from "../../api/authService";
+import apiClient from "../../api/apiClient"; // ✅ Used for API calls
 
-// ✅ Load user & token from localStorage (Ensure this is declared BEFORE initialState)
+// ✅ Load user & tokens from localStorage
 const storedUser = localStorage.getItem("user");
 const storedToken = localStorage.getItem("token");
+const storedRefreshToken = localStorage.getItem("refreshToken");
+const storedUserId = localStorage.getItem("userId"); // ✅ Store userId separately
 
-// ✅ Define Types for State and API Responses
-// Define User Interface
+// ✅ Define User Interface
 interface User {
-  _id: string; // ✅ Ensure `_id` is present
+  _id: string;
   name: string;
   email: string;
-  roles: string[];
+  role: string;
   profileImage?: string;
 }
 
-
 interface AuthState {
   user: User | null;
+  userId: string | null;
   isAuthenticated: boolean;
   token: string | null;
+  refreshToken: string | null;
   loading: boolean;
   error: string | null;
 }
 
-// ✅ Initial State (No duplicate declaration)
+// ✅ Initial State
 const initialState: AuthState = {
   user: storedUser ? JSON.parse(storedUser) : null,
+  userId: storedUserId || null, // ✅ Load userId from storage
   isAuthenticated: !!storedUser,
   token: storedToken || null,
+  refreshToken: storedRefreshToken || null,
   loading: false,
   error: null,
 };
 
-// 🔑 Ensure user is set in Redux
+// 🔑 Async Thunk: Login
 export const userLogin = createAsyncThunk(
   "auth/login",
-  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+  async ({ email, password, keepMeSignedIn }: { email: string; password: string; keepMeSignedIn: boolean }, { rejectWithValue }) => {
     try {
-      const response = await login(credentials);
-      const data = response.data as { token: string; user: User };
+      const data = await login({ email, password }); // ✅ Directly return `data` without response.data
 
+      // ✅ Store Access Token & User Info
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("userId", data.user._id); // ✅ Store userId separately
+
+      // ✅ Store Refresh Token (Only if received)
+      if (data.refreshToken && keepMeSignedIn) {
+        localStorage.setItem("refreshToken", data.refreshToken);
+      } else {
+        localStorage.removeItem("refreshToken");
+      }
 
       return data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Login failed");
+      return rejectWithValue(error.message || "Login failed");
     }
   }
 );
+
+// 🔄 Async Thunk: Refresh Token (Auto-Renewal)
+export const refreshAccessToken = createAsyncThunk("auth/refresh-token", async (_, { rejectWithValue }) => {
+  try {
+    const response = await apiClient.post<{ token: string }>("/auth/refresh-token", { refreshToken: localStorage.getItem("refreshToken") });
+
+    const { token } = response.data; // ✅ Access `data.token` instead of `response.token`
+
+    // ✅ Update Access Token in Storage
+    localStorage.setItem("token", token);
+
+    return token;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Token refresh failed");
+  }
+});
 
 // 🔑 Async Thunk: Register
 export const userRegister = createAsyncThunk(
   "auth/register",
   async (userData: { name: string; email: string; password: string; phone: string }, { rejectWithValue }) => {
     try {
-      const response = await register(userData);
+      const data = await register(userData); // ✅ Directly use `data`
       toast.success("✅ Registration successful! Verify your email.");
-      return response.data;
+      return data;
     } catch (error: any) {
-      const errorMessage = error.response?.data || "❌ Registration failed";
+      const errorMessage = error.message || "❌ Registration failed";
       toast.error(errorMessage);
       return rejectWithValue(errorMessage);
     }
@@ -74,11 +103,11 @@ export const verifyEmailAction = createAsyncThunk(
   "auth/verifyEmail",
   async (data: { email: string; otp: string }, { rejectWithValue }) => {
     try {
-      const response = await verifyEmail(data);
+      const response = await verifyEmail(data); // ✅ Directly use `response`
       toast.success("✅ Email verified successfully!");
-      return response.data;
+      return response;
     } catch (error: any) {
-      const errorMessage = error.response?.data || "❌ Verification failed";
+      const errorMessage = error.message || "❌ Verification failed";
       toast.error(errorMessage);
       return rejectWithValue(errorMessage);
     }
@@ -86,17 +115,35 @@ export const verifyEmailAction = createAsyncThunk(
 );
 
 // 🔐 Async Thunk: Logout
-export const userLogout = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
+export const userLogout = createAsyncThunk("auth/logout", async (_, { rejectWithValue, getState }) => {
   try {
-    await logout();
+    const state: any = getState(); // ✅ Get Redux state
+    const token = state.auth.token || localStorage.getItem("token"); // ✅ Use stored token if Redux state is empty
+
+    if (token) {
+      await apiClient.post("auth/logout", {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+
+    // ✅ Clear all stored tokens after successful logout
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userId"); // ✅ Remove stored userId
+    localStorage.removeItem("refreshToken");
+
     toast.info("✅ Logged out successfully!");
-    return true; // ✅ Ensure it returns something
+    return true;
   } catch (error: any) {
-    const errorMessage = error.response?.data || "❌ Logout failed";
-    toast.error(errorMessage);
-    return rejectWithValue(errorMessage);
+    console.error("🔥 Logout failed:", error);
+
+    // ✅ Clear tokens even if logout fails
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("refreshToken");
+
+    return rejectWithValue(error.message || "❌ Logout failed");
   }
 });
 
@@ -107,18 +154,18 @@ const authSlice = createSlice({
   reducers: {
     resetError: (state) => {
       state.error = null;
+      
     },
+    
   },
   extraReducers: (builder) => {
     builder
       // 🔑 Login
-      .addCase(userLogin.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(userLogin.fulfilled, (state, action: PayloadAction<{ token: string; user: User }>) => {
+      .addCase(userLogin.fulfilled, (state, action: PayloadAction<{ token: string; refreshToken?: string; user: User }>) => {
         state.user = action.payload.user;
+        state.userId = action.payload.user._id; // ✅ Store userId in state
         state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken || null; // ✅ Handle missing refreshToken safely
         state.isAuthenticated = true;
         state.loading = false;
       })
@@ -127,27 +174,25 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // 🔄 Refresh Token
+      .addCase(refreshAccessToken.fulfilled, (state, action: PayloadAction<string>) => {
+        state.token = action.payload;
+      })
+      .addCase(refreshAccessToken.rejected, (state) => {
+        state.user = null;
+        state.userId = null; // ✅ Clear userId on token failure
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+      })
+
       // 🔑 Register
-      .addCase(userRegister.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(userRegister.fulfilled, (state) => {
-        state.loading = false;
-      })
       .addCase(userRegister.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
 
       // 📧 Email Verification
-      .addCase(verifyEmailAction.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(verifyEmailAction.fulfilled, (state) => {
-        state.loading = false;
-      })
       .addCase(verifyEmailAction.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -156,13 +201,18 @@ const authSlice = createSlice({
       // 🔐 Logout
       .addCase(userLogout.fulfilled, (state) => {
         state.user = null;
+        state.userId = null;
         state.token = null;
+        state.refreshToken = null;
         state.isAuthenticated = false;
         state.loading = false;
       })
-      .addCase(userLogout.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+      .addCase(userLogout.rejected, (state) => {
+        state.user = null;
+        state.userId = null;
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
       });
   },
 });

@@ -5,16 +5,18 @@ import { RootState } from "../redux/store";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: string[]; // ✅ Use 'requiredRoles', not 'roles'
+  requiredRoles?: string[]; // ✅ Ensure requiredRoles is an array
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRoles }) => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
-  // Ensure user has at least one of the required roles (or allow if no roles are required)
-  const hasRequiredRole = requiredRoles ? user?.roles?.some(role => requiredRoles.includes(role)) : true;
+  // ✅ Ensure user role is checked properly
+  const userRole = user?.role || "customer";
 
-  // Redirect if not authenticated or lacks required roles
+  // ✅ If requiredRoles are provided, check if the user has access
+  const hasRequiredRole = requiredRoles?.length ? requiredRoles.includes(userRole) : true;
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

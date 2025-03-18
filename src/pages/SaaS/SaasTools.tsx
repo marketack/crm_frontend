@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 
 const SaaSTools = () => {
   const user = useAppSelector((state) => state.auth.user);
-  const isAdminOrStaff = user?.roles?.includes("admin") || user?.roles?.includes("staff");
+  const isAdminOrStaff = user?.role?.includes("admin") || user?.role?.includes("staff");
 
   const [tools, setTools] = useState<SaaSTool[]>([]);
   const [subscriptions, setSubscriptions] = useState<string[]>([]);
@@ -97,7 +97,7 @@ const SaaSTools = () => {
   };
 
   return (
-    <div style={{ marginTop: "80px", padding: "20px" }}>
+    <div style={{padding: "20px" }}>
       <Typography variant="h4" gutterBottom>SaaS Tools</Typography>
 
       {isAdminOrStaff && (
